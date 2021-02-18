@@ -1,0 +1,19 @@
+name: pyicesat2
+channels:
+    - conda-forge
+dependencies:
+  - python=3.7
+  - numpy
+  - gdal
+  - pandas
+  - xarray
+  - netCDF4
+  - basemap
+  - dask
+  - matplotlib
+  - h5py
+  - pyproj
+  - cartopy
+  - opencv
+  - tqdm
+  - astropy
