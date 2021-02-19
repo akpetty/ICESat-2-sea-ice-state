@@ -24,7 +24,7 @@ from glob import glob
 from tqdm import tqdm
 from astropy.time import Time
 from datetime import datetime
-
+import pyproj
 
 def get_atl07_data_beam(ATL07, beamStr):
     """ Gran ATL07 data and put in pandas dataframer
@@ -53,14 +53,16 @@ def get_atl07_data_beam(ATL07, beamStr):
     ssh_this = ATL07[beamStr + '/sea_ice_segments/heights/height_segment_ssh_flag'][:]
     # segment length
     seglength_this = ATL07[beamStr + '/sea_ice_segments/heights/height_segment_length_seg'][:]
-    
+    # ice_conc
+    ice_conc = ATL07[beamStr + '/sea_ice_segments/stats/ice_conc'][:]
+    # delta time
     delta_time_this=ATL07[beamStr + '/sea_ice_segments/delta_time'][:]
 
     # #Add this value to delta time parameters to compute full gps_seconds
     atlas_epoch=ATL07['/ancillary_data/atlas_sdp_gps_epoch'][0] 
 
     # subtract leap seconds offset (will change to 38 soon, watch out)
-    gps_seconds = atlas_epoch + delta_time_this - 37
+    gpsseconds = atlas_epoch + delta_time_this - 37.
 
     ## Use astropy to convert GPS time to UTC time
     #tiso=Time(gps_seconds,format='gps').utc.datetime
@@ -73,7 +75,7 @@ def get_atl07_data_beam(ATL07, beamStr):
     # Assign to pandas dataframe
     pd_data = pd.DataFrame({'lons': lon_this, 'lats': lat_this, 'along_dist':dist_this, 'seg_length': seglength_this, 
             'seg_type':seg_this, 'height':height_this, 'ssh_flag':ssh_this, 'seg_h_mean':seg_h_mean_this, 
-            'seg_h_width':seg_h_width_this, 'seg_surf_err':seg_surf_err_this, 'gpsseconds':gps_seconds})
+            'seg_h_width':seg_h_width_this, 'seg_surf_err':seg_surf_err_this, 'gpsseconds':gpsseconds, 'ice_conc':ice_conc})
     
 
     print('seg limits:', np.amin(pd_data['seg_length'].values), np.amax(pd_data['seg_length'].values))
@@ -432,14 +434,14 @@ def get_region_mask(ancDataPath, mplot, xypts_return=0):
     #11 - Land
 
     fd = open(file_mask, 'rb')
-    region_mask = fromfile(file=fd, dtype=datatype)
-    region_mask = reshape(region_mask[header:], [448, 304])
+    region_mask = np.fromfile(file=fd, dtype=datatype)
+    region_mask = np.reshape(region_mask[header:], [448, 304])
 
     if (xypts_return==1):
         mask_latf = open(ancDataPath+'/psn25lats_v3.dat', 'rb')
         mask_lonf = open(ancDataPath+'/psn25lons_v3.dat', 'rb')
-        lats_mask = reshape(fromfile(file=mask_latf, dtype='<i4')/100000., [448, 304])
-        lons_mask = reshape(fromfile(file=mask_lonf, dtype='<i4')/100000., [448, 304])
+        lats_mask = np.reshape(np.fromfile(file=mask_latf, dtype='<i4')/100000., [448, 304])
+        lons_mask = np.reshape(np.fromfile(file=mask_lonf, dtype='<i4')/100000., [448, 304])
 
         xpts, ypts = mplot(lons_mask, lats_mask)
 
@@ -463,14 +465,14 @@ def get_region_mask_s(ancDataPath, mplot, xypts_return=0):
     #12 - Coast
 
     fd = open(file_mask, 'rb')
-    region_mask = fromfile(file=fd, dtype=datatype)
-    region_mask = reshape(region_mask[header:], [332, 316])
+    region_mask = np.fromfile(file=fd, dtype=datatype)
+    region_mask = np.reshape(region_mask[header:], [332, 316])
 
     if (xypts_return==1):
         mask_latf = open(ancDataPath+'/pss25lats_v3.dat', 'rb')
         mask_lonf = open(ancDataPath+'/pss25lons_v3.dat', 'rb')
-        lats_mask = reshape(fromfile(file=mask_latf, dtype='<i4')/100000., [332, 316])
-        lons_mask = reshape(fromfile(file=mask_lonf, dtype='<i4')/100000., [332, 316])
+        lats_mask = np.reshape(np.fromfile(file=mask_latf, dtype='<i4')/100000., [332, 316])
+        lons_mask = np.reshape(np.fromfile(file=mask_lonf, dtype='<i4')/100000., [332, 316])
 
         xpts, ypts = mplot(lons_mask, lats_mask)
 

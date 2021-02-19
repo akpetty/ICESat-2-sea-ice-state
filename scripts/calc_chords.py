@@ -68,8 +68,8 @@ def gen_raw_chord_netcdf(pd_data, out_path, extra_str):
 release='rel003'
 #ATL07path = '/sea_ice_pso/aivanoff/atl0710_testrun_rel003_code20200420_segtype2-5_mod_redo/'
 ATL07path = '/cooler/I2-ASAS/'+release
-figPath='../figures/maps/'
-savePath='../data/'
+figPath='../figures/'+release+'/'
+savePath='../data/'+release+'/'
 beams = [1, 3, 5] # 1 3 5 should always be strong beams!
 print(str(len(beams))+'beams')
 
@@ -206,9 +206,9 @@ if (plot==True):
 
     for i in range(len(data)):
         ax=axs.flatten()[i]
-        sca(ax)
+        plt.sca(ax)
         
-        im1=hexbin(xpts[i], ypts[i], C=data[i], vmin=minval[i], vmax=maxval[i], gridsize=(300, 300), cmap=cmaps[i], zorder=2, rasterized=True)
+        im1=plt.hexbin(xpts[i], ypts[i], C=data[i], vmin=minval[i], vmax=maxval[i], gridsize=(300, 300), cmap=cmaps[i], zorder=2, rasterized=True)
         
         mapProj.drawcoastlines(linewidth=0.25, zorder=5)
         mapProj.drawparallels(np.arange(90,-90,-10), linewidth = 0.25, zorder=10)
