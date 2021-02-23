@@ -317,11 +317,9 @@ ax4.annotate(floe_lengthv2_mean_str+r' km',xy=(1.01, 0.32), color='m',xycoords='
 ax4.annotate(lead_fraction2_str+r' %',xy=(1.01, 0.1), color='m',xycoords='axes fraction')
 
 plt.ylim(1.5,4)  
-#plt.xlim(ax3.get_xlim())
-
 plt.autoscale(enable=True, axis='x', tight=True)
+plt.xlim(ax3.get_xlim())
 ax4.yaxis.set_ticklabels([])
-#plt.ylim(-0.2,3)
 plt.xlabel('Along track distance (km)', color='k')
 
 plt.subplots_adjust(left=0.09, right=0.92, top=0.85, bottom=0.09, wspace=0, hspace=0)

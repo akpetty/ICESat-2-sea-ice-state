@@ -1,7 +1,7 @@
 """ utils.py
     
     Random functions used by the various scripts and notebooks in this repo
-    Initial code written by Alek Petty (01/06/2019)
+    Initial code written by Alek Petty and Marco Bagnardi (02/01/2020) 
 
     Python dependencies:
         See below for the relevant module imports. More information on installation is given in the README file.
@@ -198,79 +198,7 @@ def calc_leadheight_thresh(data, idxT, height_var='height', seg_h_width_var='seg
     return lead_htmax
 
 
-def calc_chord_length(data, lon, lat, minsize=3, minlength=60., maxdiff=300):
-    """ Calculate chord lengths
-
-    In summary, this function finds the distance between the middle of the lead segments either side of a floe..
-    
-    Args:
-        data (numpy array): array of along track distance with lead segments set to negative numbers
-        lon (numpy array): longitudes
-        lat (numpy array): latitudes
-        minsize (int): minimum number of segments for a valid chord
-        minlength (int): minimum length for a valid chord
-        maxdiff (int): maximum segment gap within a chord
-    
-    Returns:
-        lengths: chord lengths
-        lons: chord lons
-        lats: chord lats
-    
-    Caveats:
-        should probably remove the segment length from each side..? although gets confusing when you consider the overlap between segments..
-
-    """
-
-    # Split data where difference isn't 0, i.e. where it's transitioning from 0 to 1 or vice versa.
-    splitdata=np.split(data, np.where(data< -100)[0])
-
-    splitdata_lon=np.split(lon, np.where(data< -100)[0])
-    splitdata_lat=np.split(lat, np.where(data< -100)[0])
-    
-
-    lengths=[]
-    groups=[]
-    lons=[]
-    lats=[]
-
-    #print('first group from granule', splitdata[0])
-    print('processing all...')
-    for x in np.arange(np.size(splitdata)):
-        # start at index 1 as index 0 is the lead
-        # If it's a chord (i.e. positive values)
-        if np.mean(splitdata[x][1:])>-900:
-            # If greater that minimum number of segments
-            if np.size(splitdata[x][1:]) >= minsize:
-                #If greater than minimum length 
-                 if (splitdata[x][-1]-splitdata[x][1]) >= minlength:
-                    #If no segment gap greater than max gap 
-                    if (np.max(np.diff(splitdata[x][1:]))<maxdiff):
-                        
-                        groups.append(splitdata[x][1:])
-                        lengths.append(splitdata[x][-1]-splitdata[x][1])
-                        lons.append(np.mean(splitdata_lon[x][1:]))
-                        lats.append(np.mean(splitdata_lat[x][1:]))
-                    #else:
-                        #print('dropped floe group as max segment separation = ', maxdiff)
-
-    
-    #print('last group from granule', splitdata[x])
-
-    lengths=np.asarray(lengths)
-    lons=np.asarray(lons)
-    lats=np.asarray(lats)
-
-    #lengths[np.where(lengths>50000)]=np.nan
-
-
-    print(np.size(lengths))
-    print(np.size(lons))
-    print(np.size(lats))
-
-
-    return lengths, groups, lons, lats
-
-def calc_chords(leads, pd_data, version_str, minsize=3, minlength=60., maxdiff=300, max_chord_length=50000):
+def calc_chords(leads, pd_data, version_str, minsize=3, minlength=60., maxdiff=300, max_chord_length=50000, footprint_size=11):
     """ Finding chord lengths
     
      Args:
@@ -280,6 +208,7 @@ def calc_chords(leads, pd_data, version_str, minsize=3, minlength=60., maxdiff=3
         minlength (int): minimum length for a valid chord
         maxdiff (int): maximum segment gap within a chord
         max_chord_length (int): maximum chord length (set to nan if higher than this)
+        footprint_size (int): footprint size, add this to the chord length estimate (half each side)
 
     To do:
         Since switching to pandas it makes sense to use groupby to group the floes instead of this ad-hoc attempt.
@@ -292,8 +221,6 @@ def calc_chords(leads, pd_data, version_str, minsize=3, minlength=60., maxdiff=3
     splitdata_lat=np.split(pd_data.lats, np.where(leads< -100)[0])
     splitdata_time=np.split(pd_data.gpsseconds, np.where(leads< -100)[0])
 
-    # footprint size (m)
-    footprint_size = 11.
 
     lengths=[]
     groups=[]
@@ -315,7 +242,7 @@ def calc_chords(leads, pd_data, version_str, minsize=3, minlength=60., maxdiff=3
                     if (np.max(np.diff(splitdata[x][1:]))<maxdiff):
                         
                         groups.append(splitdata[x][1:])
-                        lengths.append(splitdata[x][-1]-splitdata[x][1])
+                        lengths.append(splitdata[x][-1]-splitdata[x][1]+footprint_size)
                         lons.append(np.mean(splitdata_lon[x][1:]))
                         lats.append(np.mean(splitdata_lat[x][1:]))
                         time.append(np.mean(splitdata_time[x][1:]))
@@ -356,19 +283,15 @@ def get_chords_2versions(data, km_unit=True, lon_var = 'lons', lat_var='lats', a
         # convert along track to meters
         data[alongtrack_var] = data[alongtrack_var].multiply(1000.)
 
-    maxDist=np.int(data[alongtrack_var].iloc[-1])
-    #print('seg dist of last seg', maxDist, 'max seg dist', np.nanmax(dist))
-
     
     lead_indexv1=np.copy(data[alongtrack_var]) 
     lead_indexv2=np.copy(data[alongtrack_var]) 
-    #floesT07[np.where(ssh>0.5)]=-1 the old sshflag approach
     #print('along min/max:', np.amin(lead_indexv2), np.amax(lead_indexv2))
+
     lead_indexv1[np.where(data[sshvar]>0.5)]=-999
-    #print(chords_v1)
     
     # loop over 10 km sections to do the percentile height /seg type classification as in ATL10 processing
-    for x in range(int(data[alongtrack_var].iloc[0]), maxDist, percentile_section_size):
+    for x in range(int(data[alongtrack_var].iloc[0]), np.int(data[alongtrack_var].iloc[-1]), percentile_section_size):
         #print(x, percentile_section_size)
         #print('x:', x)
         idxT=np.where((lead_indexv2>x)&(lead_indexv2<(x+percentile_section_size)))[0]
