@@ -48,7 +48,7 @@ def gen_raw_chord_netcdf(pd_data, out_path, extra_str):
     chord_data['lats'].attrs={'units':'degrees North', 'coordinates':'along-track chord','long_name':'mean chord latitude'}
     chord_data['lons'].attrs={'units':'degrees East', 'coordinates':'along-track chord','long_name':'mean chord longitude'}
     chord_data['beam_number'].attrs={'units':'beam number', 'coordinates':'along-track chord','long_name':'ATLAS beam number (1 3 5 = strong beams)'}
-    chord_data['lengths'].attrs={'units':'meters', 'coordinates':'along-track chord','long_name':'along-track chord length from a given ATLAS beam'}
+    chord_data['lengths'].attrs={'units':'meters', 'coordinates':'along-track chord','long_name':'along-track chord length from a given ATLAS beam. Data ordered by ascending beam number and then time.'}
               
 
     chord_data.attrs={'Description':'Along-track raw chord length estimates from ICESat-2 ('+extra_str+' algorithm).',
@@ -78,19 +78,6 @@ version='001'
 
 #----different hemispheres/time periods of analysis
 period=3
-
-if (period==1):
-    # Arctic start of winter 2018 rel002/003 crossover
-    mapProj = Basemap(epsg=3411,resolution='l', llcrnrlon=279.26, llcrnrlat=44., urcrnrlon=105, urcrnrlat=41.37)
-
-    hem='nh'
-    start_date='20181101'
-    end_date = '20181101'
-    dateStr=start_date+'-'+end_date
-    filesAll = glob(ATL07path+'/ATL07-01/data/ATL07-01_*.h5')
-    date_range = pd.date_range(start_date,end_date, freq='d').strftime("%Y%m%d").tolist()
-    
-    ATL07files = [s for s in filesAll for sub in date_range if sub in s ]
 
 if (period==2):
     # Arctic start of winter 2018 rel002/003 crossover
@@ -171,6 +158,10 @@ pddata_v2_all = pd.concat(pddata_v2_list,axis=0)
 # arrange in order of beam number
 pddata_v1_all=pddata_v1_all.sort_values(['beam_number', 'time'], ascending=[True, True])
 pddata_v2_all=pddata_v2_all.sort_values(['beam_number', 'time'], ascending=[True, True])
+
+# Reset row indexing
+pddata_v1_all=pddata_v1_all.reset_index(drop=True)
+pddata_v2_all=pddata_v2_all.reset_index(drop=True)
 
 gen_raw_chord_netcdf(pddata_v1_all, savePath+'IS2_raw_chord_lengths_v1_'+dateStr+'_'+hem+'_'+release[-3:]+'_001', 'v1')
 gen_raw_chord_netcdf(pddata_v2_all, savePath+'IS2_raw_chord_lengths_v2_'+dateStr+'_'+hem+'_'+release[-3:]+'_001', 'v2')

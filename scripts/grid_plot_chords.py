@@ -42,7 +42,7 @@ from cartopy.util import add_cyclic_point
 
 ut.reset_matplotlib()
 
-def gen_netcdf(savePathT, outStr, xpts2d, ypts2d, lons2d, lats2d, chord_lengthv1, chord_lengthv2, epsg):
+def gen_netcdf(savePathT, xpts2d, ypts2d, lons2d, lats2d, chord_lengthv1, chord_lengthv2, epsg):
     f = nc4.Dataset(savePathT+'IS2_gridded_chord_lengths_'+dateStr+'_'+hem+'_'+release[-3:]+'_001.nc','w', format='NETCDF4') #'w' stands for write
 
     print ('dimensions:', lons2d.shape[0], lons2d.shape[1])
@@ -128,6 +128,7 @@ if (period==1):
 
 if (period==2):  
     #mapProj = Basemap(epsg=3411,resolution='l', llcrnrlon=279.26, llcrnrlat=44., urcrnrlon=105, urcrnrlat=41.37)
+    mplot = Basemap(epsg=3411,resolution='l', llcrnrlon=279.26, llcrnrlat=44., urcrnrlon=105, urcrnrlat=41.37)
     epsg='3411'
     mapProj = pyproj.Proj("+init=EPSG:"+epsg)
     hem='nh'
@@ -140,7 +141,7 @@ if (period==2):
 
 elif (period==3):
     # Arctic start of winter 2018 rel002/003 crossover
-    #mapProj = Basemap(epsg=3412,resolution='l', llcrnrlon=225, llcrnrlat=-45, urcrnrlon=42, urcrnrlat=-44)
+    mplot = Basemap(epsg=3412,resolution='l', llcrnrlon=225, llcrnrlat=-45, urcrnrlon=42, urcrnrlat=-44)
     epsg='3412'
     mapProj = pyproj.Proj("+init=EPSG:"+epsg)
     hem='sh'
@@ -150,6 +151,7 @@ elif (period==3):
     #gridbins=(300, 300)
     xptsG, yptsG, latG, lonG, proj= ut.create_grid_nsidc_antarctic()
     region_mask, xptsR, yptsR=ut.get_region_mask_s(anc_data_path, mapProj, xypts_return=1)
+
 
 
 chords_v1 = xr.open_dataset(savePath+'IS2_raw_chord_lengths_v1_'+dateStr+'_'+hem+'_'+release[-3:]+'_001.nc')
@@ -171,8 +173,7 @@ chordsG2[region_mask>10]=np.nan
 chordsG=chordsG*0.001
 chordsG2=chordsG2*0.001
 
-outstr=release+hem+str(len(beams))+'beams'+dateStr
-gen_netcdf(savePath, outstr, xptsG, yptsG, lonG, latG, chordsG,chordsG2, epsg)
+gen_netcdf(savePath, xptsG, yptsG, lonG, latG, chordsG,chordsG2, epsg)
 
 
 data=[chordsG, chordsG2, (chordsG2-chordsG)]
@@ -180,14 +181,15 @@ data=[chordsG, chordsG2, (chordsG2-chordsG)]
 means=['%.02f' %np.nanmean(dataT) for dataT in data]
 
 
-fig=plt.figure(figsize=(10, 5))
-ax=plt.gca()
-im1 = ax.imshow(chordsG)
+#fig=plt.figure(figsize=(10, 5))
+#ax=plt.gca()
+#im1 = ax.imshow(chordsG)
+#plt.tight_layout()
+#fig.savefig(figPath+'/IS2_gridded_chord_lengths_v1_'+dateStr+'_'+hem+'_'+release[-3:]+'_001_test.png', dpi=300)
 
-plt.tight_layout()
-fig.savefig(figPath+'/IS2_gridded_chord_lengths_v1_'+dateStr+'_'+hem+'_'+release[-3:]+'_001_test.png', dpi=300)
 
-
+# Use the basemap projection/library for plotting as having problems with cartopy
+xptsGM , yptsGM = mplot(lonG, latG)
 
 minval=[0, 0, -1]
 maxval=[16, 16, 1]
@@ -200,7 +202,8 @@ cbarlabels=['Chord length (km)', 'Chord length (km)', 'difference (km)']
 cmaps=[plt.cm.viridis,  plt.cm.viridis, plt.cm.RdBu_r]
 
 if (hem=='nh'):
-    fig, axs = plt.subplots(1, 3, figsize=(8, 5), subplot_kw=dict(projection=ccrs.NorthPolarStereo(central_longitude=-45)))
+    #fig, axs = plt.subplots(1, 3, figsize=(8, 5), subplot_kw=dict(projection=ccrs.NorthPolarStereo(central_longitude=-45)))
+    fig, axs = plt.subplots(1, 3, figsize=(8, 5))
     plt.subplots_adjust(bottom=0.01, left=0.02, top=0.95, right=0.98)
 else:
    fig, axs = plt.subplots(1, 3, figsize=(8, 3.1), subplot_kw=dict(projection=ccrs.SouthPolarStereo(central_longitude=0)))
@@ -210,42 +213,27 @@ for i in range(len(data)):
     ax=axs.flatten()[i]
     plt.sca(ax)
     
-    #data[i], lonG = add_cyclic_point(data[i], coord=lonG)
+    im1 = mplot.pcolormesh(xptsGM , yptsGM, data[i], cmap=cmaps[i], vmin=minval[i], vmax=maxval[i], edgecolors='None', zorder=1, rasterized=True)
 
-    im1 = ax.pcolormesh(lonG , latG, data[i], cmap=cmaps[i], vmin=minval[i], vmax=maxval[i], transform=ccrs.PlateCarree(), edgecolors='None', zorder=1, rasterized=True)
-
-    ax.coastlines(zorder=3)
-    ax.gridlines(draw_labels=False,
-              linewidth=0.22, color='gray', alpha=0.5, linestyle='--',zorder=3)
-    ax.add_feature(cfeature.LAND, facecolor='0.95', zorder=2)
-
-    if (hem=='nh'):
-        ax.set_extent([-179, 179, 50, 90], ccrs.PlateCarree())
-        ax.set_xlim([np.percentile(xptsG, 10), np.percentile(xptsG, 90)])
-    else:
-        ax.set_extent([-179, 179, -90, -50], ccrs.PlateCarree())
+    mplot.drawcoastlines(linewidth=0.25, zorder=5)
+    mplot.drawparallels(np.arange(90,-90,-10), linewidth = 0.25, zorder=10)
+    mplot.drawmeridians(np.arange(-180.,180.,30.), latmax=80, linewidth = 0.25, zorder=10)
+    mplot.fillcontinents(color='0.95',lake_color='0.9', zorder=3)
 
     cax,kw = mcbar.make_axes(ax,location='bottom',pad=0.01,shrink=0.9)
     cb=fig.colorbar(im1,cax=cax,extend='both',**kw)
-    #cb.set_label(varStr+' ('+units_lab+')',size=8)
-    #ax.set_title(varStr+' '+date_string+month_string+extra)
     cb.set_ticks(np.linspace(minval[i], maxval[i], 5) )
     cb.set_label(cbarlabels[i], labelpad=3)
-    #im1=hexbin(xpts_sections, ypts_sections, C=data[i], vmin=minval[i], vmax=maxval[i], gridsize=gridbins, cmap=cmaps[i], zorder=2, rasterized=True)
-    
 
     if (hem=='nh'):
         ax.annotate(labels[i], xy=(0.98, 1.01), xycoords='axes fraction', verticalalignment='bottom', horizontalalignment='right',color='k')
-        #ax.annotate('mean: '+means[i]+' m', xy=(0.97, 0.87), xycoords='axes fraction', verticalalignment='bottom', horizontalalignment='right',color='k')
     else:
         ax.annotate(labels[i], xy=(0.98, 1.01), xycoords='axes fraction', verticalalignment='bottom', horizontalalignment='right',color='k')
 
     ax.annotate('mean: '+means[i]+' km', xy=(0.97, 0.02), xycoords='axes fraction', verticalalignment='bottom', horizontalalignment='right',color='k')
 
-
     if (i==0):
         ax.annotate(dateStr, xy=(0.02, 1.01), xycoords='axes fraction', verticalalignment='bottom', horizontalalignment='left',color='k')
 
-#plt.tight_layout()
 fig.savefig(figPath+'/IS2_gridded_chord_lengths_v1_'+dateStr+'_'+hem+'_'+release[-3:]+'_001.png', dpi=300)
 

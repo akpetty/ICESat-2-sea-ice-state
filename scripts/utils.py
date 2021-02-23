@@ -91,6 +91,77 @@ def get_atl07_data_beam(ATL07, beamStr):
 
     return pd_data
 
+def get_atl07_data_beam_extra(ATL07, beamStr):
+    """ Gran ATL07 data and put in pandas dataframe, add some extra info for diagnostics
+    
+    Args:
+        ATL07 (hdf5 file): ATL07 file
+        beamStr (str): ATLAS beam 
+    
+    Returns:
+        pd_data: pandas dataframe
+
+    Caveats:
+        need to add data gap condtion but not sure how..
+
+    """
+
+    # grab location data and along-track distance
+    lon_this = ATL07[beamStr + '/sea_ice_segments/longitude'][:]
+    lat_this = ATL07[beamStr + '/sea_ice_segments/latitude'][:]
+    dist_this = ATL07[beamStr + '/sea_ice_segments/seg_dist_x'][:]
+    # Height
+    height_this = ATL07[beamStr + '/sea_ice_segments/heights/height_segment_height'][:]
+    # Seg Type
+    seg_this = ATL07[beamStr + '/sea_ice_segments/heights/height_segment_type'][:]
+    # SSH_Flag
+    ssh_this = ATL07[beamStr + '/sea_ice_segments/heights/height_segment_ssh_flag'][:]
+    # segment length
+    seglength_this = ATL07[beamStr + '/sea_ice_segments/heights/height_segment_length_seg'][:]
+    # photon rate
+    photon_rate = ATL07[beamStr + '/sea_ice_segments/stats/photon_rate'][:]
+    # background rate
+    bground_rate = ATL07[beamStr + '/sea_ice_segments/stats/backgr_r_200'][:]
+
+    # ice_conc
+    ice_conc = ATL07[beamStr + '/sea_ice_segments/stats/ice_conc'][:]
+    # delta time
+    delta_time_this=ATL07[beamStr + '/sea_ice_segments/delta_time'][:]
+
+    # #Add this value to delta time parameters to compute full gps_seconds
+    atlas_epoch=ATL07['/ancillary_data/atlas_sdp_gps_epoch'][0] 
+
+    # subtract leap seconds offset (will change to 38 soon, watch out)
+    gpsseconds = atlas_epoch + delta_time_this - 37.
+
+    ## Use astropy to convert GPS time to UTC time
+    #tiso=Time(gps_seconds,format='gps').utc.datetime
+
+     # seg stats
+    seg_h_mean_this = ATL07[beamStr + '/sea_ice_segments/stats/hist_mean_h'][:]
+    seg_h_width_this = ATL07[beamStr + '/sea_ice_segments/stats/hist_w'][:]
+    seg_surf_err_this = ATL07[beamStr + '/sea_ice_segments/heights/height_segment_surface_error_est'][:]
+
+    # Assign to pandas dataframe
+    pd_data = pd.DataFrame({'lons': lon_this, 'lats': lat_this, 'along_dist':dist_this, 'seg_length': seglength_this, 
+            'seg_type':seg_this, 'height':height_this, 'ssh_flag':ssh_this, 'seg_h_mean':seg_h_mean_this, 
+            'seg_h_width':seg_h_width_this, 'seg_surf_err':seg_surf_err_this, 'gpsseconds':gpsseconds, 'ice_conc':ice_conc, 
+            'photon_rate':photon_rate, 'bground_rate':bground_rate})
+    
+
+    print('seg limits:', np.amin(pd_data['seg_length'].values), np.amax(pd_data['seg_length'].values))
+    print('lon limits:', np.amin(pd_data['lons'].values), np.amax(pd_data['lons'].values))
+    print('lat limits:', np.amin(pd_data['lats'].values), np.amax(pd_data['lats'].values))
+
+    # Filter data
+    pd_data= pd_data.dropna() 
+    pd_data = pd_data[pd_data['seg_length']<200]
+    pd_data = pd_data[pd_data['seg_length']>2]
+    pd_data = pd_data[pd_data['height']<1e6]
+    pd_data = pd_data[pd_data['seg_h_mean']<1e6]
+
+    return pd_data
+
 
 def calc_leadheight_thresh(data, idxT, height_var='height', seg_h_width_var='seg_h_width', seg_h_mean_var='seg_h_mean', seg_surf_err_var='seg_surf_err',percentile_thresh=20):
     """ Calculate the local lead height
@@ -179,8 +250,8 @@ def calc_chord_length(data, lon, lat, minsize=3, minlength=60., maxdiff=300):
                         lengths.append(splitdata[x][-1]-splitdata[x][1])
                         lons.append(np.mean(splitdata_lon[x][1:]))
                         lats.append(np.mean(splitdata_lat[x][1:]))
-                    else:
-                        print('dropped floe group as max segment separation = ', maxdiff)
+                    #else:
+                        #print('dropped floe group as max segment separation = ', maxdiff)
 
     
     #print('last group from granule', splitdata[x])

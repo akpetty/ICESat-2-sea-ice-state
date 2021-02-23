@@ -104,7 +104,7 @@ def get_sections_radioleads(pd_dataT, section_size=10000):
                 lead_fractions.append(np.nan)
                 lead_fractions2.append(np.nan)
     
-    pd_data_leads = pd.DataFrame({'lead_fraction_v1': lead_fractions,'lead_fraction_v2': lead_fractions2, 'radio_total_fractions':radio_total_fractions, 'specular_radio_ratios':specular_radio_ratios, 'specular_lead_fractions':specular_lead_fractions, 'lons': lons_sections, 'lats':lats_sections, 'date-time': time_sections, 'ice_conc': ice_conc_sections})
+    pd_data_leads = pd.DataFrame({'lead_fraction_v1': lead_fractions,'lead_fraction_v2': lead_fractions2, 'radio_total_fractions':radio_total_fractions, 'specular_radio_ratios':specular_radio_ratios, 'specular_lead_fractions':specular_lead_fractions, 'lons': lons_sections, 'lats':lats_sections, 'time': time_sections, 'ice_conc': ice_conc_sections})
 
     return pd_data_leads
 
@@ -124,20 +124,7 @@ print(str(len(beams))+'beams')
 #beams = ['gt1l']
 
 #----different hemispheres/time periods of analysis
-period=3
-
-if (period==1):
-    # Arctic start of winter 2018 rel002/003 crossover
-    mapProj = Basemap(epsg=3411,resolution='l', llcrnrlon=279.26, llcrnrlat=44., urcrnrlon=105, urcrnrlat=41.37)
-
-    hem='nh'
-    start_date='20181101'
-    end_date = '20181103'
-    dateStr=start_date+'-'+end_date
-    filesAll = glob(ATL07path+'/ATL07-01/data/ATL07-01_*.h5')
-    date_range = pd.date_range(start_date,end_date, freq='d').strftime("%Y%m%d").tolist()
-    
-    ATL07files = [s for s in filesAll for sub in date_range if sub in s ]
+period=2
 
 if (period==2):
     # Arctic start of winter 2018 rel002/003 crossover
@@ -185,17 +172,17 @@ def gen_netcdf(pd_data, out_path):
     lead_data = xr.Dataset.from_dataframe(pd_data)
 
     #lead_data['date-time'].attrs={'units':'datetime64', 'coordinates':'along-track 10 km swath section','long_name':'mean datetime of swath section acquisition'}
-    lead_data['lats'].attrs={'units':'degrees North', 'coordinates':'along-track 10 km swath section','long_name':'mean chord latitude'}
-    lead_data['lons'].attrs={'units':'degrees East', 'coordinates':'along-track 10 km swath section','long_name':'mean chord longitude'}
-    lead_data['lead_fraction_v1'].attrs={'units':'fraction (0 to 1)', 'coordinates':'along-track 10 km swath section','long_name':'Segment length weighted linear lead fraction within a 10 km section from the three strong ATLAS beams (version 1 algorithm)'}
-    lead_data['lead_fraction_v2'].attrs={'units':'fraction (0 to 1)', 'coordinates':'along-track 10 km swath section','long_name':'Segment length weighted linear lead fraction within a 10 km section from the three strong ATLAS beams (version 2 algorithm)'}
-    lead_data['radio_total_fractions'].attrs={'units':'fraction (0 to 1)', 'coordinates':'along-track 10 km swath section','long_name':'Segment length weighted fraction of segments radiometrically classified as candidate leads within a 10 km section from the three strong ATLAS beams (version 2 algorithm)'}
-    lead_data['specular_lead_fractions'].attrs={'units':'fraction (0 to 1)', 'coordinates':'along-track 10 km swath section','long_name':'Segment length weighted fraction of ssh segments from specular leads  within a 10 km section from the three strong ATLAS beams (version 2 algorithm)'}
-    lead_data['specular_radio_ratios'].attrs={'units':'fraction (0 to 1)', 'coordinates':'along-track 10 km swath section','long_name':'Segment length weighted fraction of radiometric leads classified as specular (2 - 5 segment type)  within a 10 km section from the three strong ATLAS beams (version 2 algorithm)'}
+    lead_data['lats'].attrs={'units':'degrees North', 'coordinates':'along-track 10 km swath section','long_name':'section latitude'}
+    lead_data['lons'].attrs={'units':'degrees East', 'coordinates':'along-track 10 km swath section','long_name':'section longitude'}
+    lead_data['lead_fraction_v1'].attrs={'units':'fraction (0 to 1)', 'coordinates':'along-track 10 km swath section','long_name':'Linear lead fraction within a 10 km section (segment length weighted mean) from the three strong ATLAS beams (version 1 algorithm)'}
+    lead_data['lead_fraction_v2'].attrs={'units':'fraction (0 to 1)', 'coordinates':'along-track 10 km swath section','long_name':'Linear lead fraction within a 10 km section (segment length weighted mean) from the three strong ATLAS beams (version 2 algorithm)'}
+    lead_data['radio_total_fractions'].attrs={'units':'fraction (0 to 1)', 'coordinates':'along-track 10 km swath section','long_name':'Faction of segments radiometrically classified as candidate leads within a 10 km section (segment length weighted mean) from the three strong ATLAS beams (version 2 algorithm)'}
+    lead_data['specular_lead_fractions'].attrs={'units':'fraction (0 to 1)', 'coordinates':'along-track 10 km swath section','long_name':'Fraction of ssh segments from specular leads within a 10 km section (segment length weighted mean) from the three strong ATLAS beams (version 2 algorithm)'}
+    lead_data['specular_radio_ratios'].attrs={'units':'fraction (0 to 1)', 'coordinates':'along-track 10 km swath section','long_name':'Fraction of radiometric leads classified as specular (2 - 5 segment type) within a 10 km section (segment length weighted mean) from the three strong ATLAS beams (version 2 algorithm)'}
     lead_data['ice_conc'].attrs={'units':'fraction (0 to 1)', 'coordinates':'along-track 10 km swath section','long_name':'Mean CDR/NSIDC passive mcirowave ice concentration within a 10 km section from the three strong ATLAS beams (version 2 algorithm)'}
                                                    
 
-    lead_data.attrs={'Description':'Along-track lead fraction estimates from ICESat-2. Mean lead fraction calculated from the three strong beams in 10 km along-track swath scetions using two SSH metrics (v1/v2).',
+    lead_data.attrs={'Description':'Along-track lead fraction estimates from ICESat-2. Mean lead fraction calculated from the three strong beams in 10 km along-track swath scetions using two SSH metrics (v1/v2). NaNs generally indicate swath sections with not enough data to derive a lead fraction estimate (<1000 m aggregated segment length)',
         'Contact':'Alek Petty (alek.a.petty@nasa.gov)',
         'Reference': 'Petty, A. A., Bagnardi, M., Kurtz, N., Tilling, R., Fons, S., Armitage, T., et al. (2021). Assessment of ICESat‐2 sea ice surface classification with Sentinel‐2 imagery: implications for freeboard and new estimates of lead and floe geometry. Earth and Space Science, 8, e2020EA001491. https://doi.org/10.1029/2020EA001491',
         'Conventions':'CF-1.8',
@@ -259,10 +246,13 @@ for h5file in tqdm(ATL07files, leave=False):
 
 pd_data_leads_all = pd.concat(pd_data_leads_list,axis=0)
 
+# Reset row indexing
+pd_data_leads_all=pd_data_leads_all.reset_index(drop=True)
+
 gen_netcdf(pd_data_leads_all, savePath+'IS2_swath_section_lead_stats_'+dateStr+'_'+hem+'_'+release[-3:]+'_001')
 
 
-data=[pd_data_leads_all.radio_total_fractions*100., pd_data_leads_all.specular_radio_ratios*100, pd_data_leads_all.specular_lead_fractions*100., pd_data_leads_all.lead_fraction_v1*100.]
+data=[pd_data_leads_all.radio_total_fractions.values*100., pd_data_leads_all.specular_radio_ratios.values*100, pd_data_leads_all.specular_lead_fractions.values*100., pd_data_leads_all.lead_fraction_v1.values*100.]
 means=['%.01f' %np.nanmean(dataT) for dataT in data]
 #stds=['%02f' %np.nanstd(dataT) for dataT in data]
 
@@ -271,7 +261,7 @@ maxval=[5, 100, 100, 5]
 labels=['radio leads:all segments (%)', 'specular:radio leads (%)', 'ssh:specular leads (%)', 'ssh leads:all segments (%)']
 cmaps=[plt.cm.YlOrRd,  plt.cm.RdYlBu_r, plt.cm.plasma_r, plt.cm.YlOrRd]
 
-xpts_sections, ypts_sections=mapProj(pd_data_leads_all.lons, pd_data_leads_all.lats)
+xpts_sections, ypts_sections=mapProj(pd_data_leads_all.lons.values, pd_data_leads_all.lats.values)
     
 
 if (hem=='nh'):

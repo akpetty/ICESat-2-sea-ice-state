@@ -25,11 +25,11 @@ import argparse
 
 ################### Input data file names ########################################
 
+relStr='rel003'
 data_path = '/cooler/I2-ASAS/'
 s2_data_path = '/sea_ice_pso/aapetty/raw_data/'
-#example='Antarctic'
-relStr='rel003'
-figpath='./figures/'+relStr+'/'
+figPath='../figures/'+relStr+'/profiles/'
+savePath='../data/'+relStr+'/profiles/'
 bufferRatio=60 # Bigger number smaler width (try 100 for zoom in)
 
 # Function to parse command line arguments
@@ -896,8 +896,8 @@ fig.patch.set_facecolor('xkcd:white')
 
 ax1 = plt.subplot2grid((14, 1), (0, 0), rowspan=2)
 plt.imshow(crop, extent=[sub_dF07.along_dist.iloc[0], sub_dF07.along_dist.iloc[-1], -buffer/1000, +buffer/1000], aspect='auto', cmap='gray', vmin=0, vmax=255)
-plt.scatter(sub_dF07['along_dist'][sub_dF07['ssh_flag'']<0.5],np.zeros(len(sub_dF07['along_dist'][sub_dF07['ssh_flag'']<0.5])), c='r', s=buffer/800)
-plt.scatter(sub_dF07['along_dist'][sub_dF07['ssh_flag'']>0.5],np.zeros(len(sub_dF07['along_dist'][sub_dF07['ssh_flag'']>0.5])), c='y', s=buffer/400, zorder=2)
+plt.scatter(sub_dF07['along_dist'][sub_dF07['ssh_flag']<0.5],np.zeros(len(sub_dF07['along_dist'][sub_dF07['ssh_flag']<0.5])), c='r', s=buffer/800)
+plt.scatter(sub_dF07['along_dist'][sub_dF07['ssh_flag']>0.5],np.zeros(len(sub_dF07['along_dist'][sub_dF07['ssh_flag']>0.5])), c='y', s=buffer/400, zorder=2)
 
 #plt.scatter(sub_dF07['along_dist'],np.zeros(len(sub_dF07['along_dist'])), c=sub_dF07['ssh_flag''], s=buffer/10000, cmap=cmap_ssh)
 
