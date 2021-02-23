@@ -1,10 +1,10 @@
-# New estimates of chord length and lead fraction with ICESat-2
-Contact: Alek Petty / alek.a.petty@nasa.gov / www.alekpetty.com
+# New estimates of chord length and lead fraction with ICESat-2   
+Contact: Alek Petty / alek.a.petty@nasa.gov / www.alekpetty.com    
 Code contributors: Alek Petty and Marco Bagnardi
 
-Scripts and notebooks for deriving new information regarding the polar sea ice state from ICESat-2, used in Petty et al., (2021).   
+Scripts (Python code) for deriving new information regarding the polar sea ice state (lead fraction and chord length) from ICESat-2.
 
-Petty, A. A., Bagnardi, M., Kurtz, N., Tilling, R., Fons, S., Armitage, T., et al. (2021). Assessment of ICESat‐2 sea ice surface classification with Sentinel‐2 imagery: implications for freeboard and new estimates of lead and floe geometry. Earth and Space Science, 8, e2020EA001491. https://doi.org/10.1029/2020EA001491'.
+Reference: Petty, A. A., Bagnardi, M., Kurtz, N., Tilling, R., Fons, S., Armitage, T., et al. (2021). Assessment of ICESat‐2 sea ice surface classification with Sentinel‐2 imagery: implications for freeboard and new estimates of lead and floe geometry. Earth and Space Science, 8, e2020EA001491. https://doi.org/10.1029/2020EA001491'.
  
 #### Versions
 
